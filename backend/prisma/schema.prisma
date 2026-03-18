@@ -1,0 +1,171 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native"]
+  engineType    = "library"
+}
+
+datasource db {
+  provider = "sqlserver"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id         String   @id @default(uuid())
+  name       String
+  email      String   @unique
+  pictureUrl String?
+  googleId   String?  @unique
+  role       Role     @default(CAIXA)
+  createdAt  DateTime @default(now())
+  
+  shifts     Shift[]
+}
+
+enum Role {
+  ADMIN
+  CAIXA
+}
+
+model Shift {
+  id                   String      @id @default(uuid())
+  userId               String
+  startTime            DateTime    @default(now())
+  endTime              DateTime?
+  initialBalance       Float       @default(0)
+  finalExpectedBalance Float?
+  finalActualBalance   Float?
+  status               ShiftStatus @default(OPEN)
+
+  user                 User        @relation(fields: [userId], references: [id])
+  orders               Order[]
+  expenses             Expense[]
+}
+
+enum ShiftStatus {
+  OPEN
+  CLOSED
+}
+
+model Supplier {
+  id       String       @id @default(uuid())
+  name     String
+  contact  String?
+  document String?
+
+  ingredients Ingredient[]
+}
+
+model Ingredient {
+  id              String      @id @default(uuid())
+  name            String
+  measurementUnit Unit        @default(UN)
+  costPrice       Float       @default(0)
+  stockQuantity   Float       @default(0)
+  supplierId      String?
+
+  supplier        Supplier?   @relation(fields: [supplierId], references: [id])
+  technicalSheets TechnicalSheet[]
+  expenses        Expense[]
+}
+
+enum Unit {
+  KG
+  G
+  L
+  ML
+  UN
+}
+
+model Product {
+  id             String   @id @default(uuid())
+  name           String
+  description    String?
+  price          Float
+  imageUrl       String?
+  isManufactured Boolean  @default(false)
+
+  technicalSheet TechnicalSheet[]
+  optionGroups   OptionGroup[]
+  orderItems     OrderItem[]
+}
+
+model TechnicalSheet {
+  id             String     @id @default(uuid())
+  productId      String
+  ingredientId   String
+  quantityNeeded Float
+
+  product        Product    @relation(fields: [productId], references: [id])
+  ingredient     Ingredient @relation(fields: [ingredientId], references: [id])
+}
+
+model OptionGroup {
+  id         String       @id @default(uuid())
+  name       String
+  minOptions Int          @default(0)
+  maxOptions Int          @default(1)
+  productId  String
+
+  product    Product      @relation(fields: [productId], references: [id])
+  items      OptionItem[]
+}
+
+model OptionItem {
+  id              String      @id @default(uuid())
+  groupId         String
+  name            String
+  additionalPrice Float       @default(0)
+
+  group           OptionGroup @relation(fields: [groupId], references: [id])
+}
+
+model Order {
+  id            String      @id @default(uuid())
+  shiftId       String
+  totalAmount   Float
+  discount      Float       @default(0)
+  paymentMethod PaymentType @default(DINHEIRO)
+  status        OrderStatus @default(COMPLETED)
+  createdAt     DateTime    @default(now())
+
+  shift         Shift       @relation(fields: [shiftId], references: [id])
+  items         OrderItem[]
+}
+
+enum PaymentType {
+  DINHEIRO
+  PIX
+  CARTAO_CREDITO
+  CARTAO_DEBITO
+}
+
+enum OrderStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+}
+
+model OrderItem {
+  id         String  @id @default(uuid())
+  orderId    String
+  productId  String
+  quantity   Int
+  unitPrice  Float
+  totalPrice Float
+
+  order      Order   @relation(fields: [orderId], references: [id])
+  product    Product @relation(fields: [productId], references: [id])
+}
+
+model Expense {
+  id           String      @id @default(uuid())
+  shiftId      String
+  description  String
+  amount       Float
+  ingredientId String?     // Se for reposicao de estoque
+  receiptUrl   String?
+  createdAt    DateTime    @default(now())
+
+  shift        Shift       @relation(fields: [shiftId], references: [id])
+  ingredient   Ingredient? @relation(fields: [ingredientId], references: [id])
+}
