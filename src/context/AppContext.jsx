@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { v4 as uuidv4 } from 'uuid';
 
 const AppContext = createContext(null);
-const API = 'http://localhost:3001';
+const API = `http://${window.location.hostname}:3001`;
 
 const loadFromStorage = (key, defaultValue) => {
   try {

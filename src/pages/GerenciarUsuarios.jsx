@@ -16,7 +16,7 @@ export default function GerenciarUsuarios() {
   const [newPassword, setNewPassword] = useState('');
   const [newRole, setNewRole] = useState('CAIXA');
 
-  const API = 'http://localhost:3001';
+  const API = `http://${window.location.hostname}:3001`;
 
   const fetchUsers = async () => {
     try {
